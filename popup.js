@@ -1,519 +1,172 @@
-// Load the Visualization API and the piechart package.
+// Load the Visualization API with the required packages
 google.charts.load("current", { packages: ["corechart", "table"] });
 
-google.charts.setOnLoadCallback(function () {
-  displayData();
-});
+// Set a callback to run when the API is loaded
+google.charts.setOnLoadCallback(displayData);
 
-// Converts duration to String
+// Convert seconds to a human-readable time format
 function timeString(numSeconds) {
-  if (numSeconds === 0) {
-    return "0 sec";
-  }
-  var remainder = numSeconds;
-  var timeStr = "";
-  var timeTerms = {
+  if (numSeconds === 0) return "0 sec";
+
+  const timeTerms = {
     hr: 3600,
     min: 60,
     sec: 1,
   };
-  // Construct the time string
-  for (var term in timeTerms) {
-    var divisor = timeTerms[term];
+
+  let remainder = numSeconds;
+  let timeStr = "";
+
+  for (const [term, divisor] of Object.entries(timeTerms)) {
     if (remainder >= divisor) {
-      var numUnits = Math.floor(remainder / divisor);
-      timeStr += numUnits + " " + term;
-      remainder = remainder % divisor;
-      if (remainder) {
-        timeStr += " ";
-      }
+      const numUnits = Math.floor(remainder / divisor);
+      timeStr += `${numUnits} ${term}`;
+      remainder %= divisor;
+      if (remainder) timeStr += " ";
     }
   }
+
   return timeStr;
 }
 
-// Show the data for the time period indicated by addon
+// Main function to display data
 function displayData() {
-  // Get the domain data
-  var domains = JSON.parse(localStorage["domains"]);
-  var chart_data = [];
-  var table_data = [];
-  // var colors = ['#5c91e6', '#a711f2', '#c353e6', '#ed39a8', '#e66ec8', '#eb3147', '#ffae00', '#0db81e', '#fff700'];
-  for (var domain in domains) {
-    var domain_data = JSON.parse(localStorage[domain]);
-    var numSeconds = 0;
-    numSeconds = domain_data.today;
+  const domains = JSON.parse(localStorage.getItem("domains"));
+  const chartData = [];
+  const tableData = [];
+
+  for (const domain in domains) {
+    const domainData = JSON.parse(localStorage.getItem(domain));
+    const numSeconds = domainData.today;
+
     if (numSeconds > 0) {
-      chart_data.push([
-        domain,
-        {
-          v: numSeconds,
-          f: timeString(numSeconds),
-          p: {
-            style: "text-align: left; white-space: normal;",
-          },
-        },
-      ]);
-      var rnd = Math.floor(Math.random() * 8);
-      switch(rnd) {
-        case 0:
-          table_data.push([
-            {
-              v: domain,
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #5c91e6;"
-              }
-            },
-            {
-              v: numSeconds,
-              f: timeString(numSeconds),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #5c91e6;"
-              }
-            }
-          ]);
-          break;
-        case 1:
-          table_data.push([
-            {
-              v: domain,
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #a711f2;"
-              }
-            },
-            {
-              v: numSeconds,
-              f: timeString(numSeconds),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #a711f2;"
-              }
-            }
-          ]);
-          break;
-        case 2:
-          table_data.push([
-            {
-              v: domain,
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #c353e6;"
-              }
-            },
-            {
-              v: numSeconds,
-              f: timeString(numSeconds),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #c353e6;"
-              }
-            }
-          ]);
-          break;
-        case 3:
-          table_data.push([
-            {
-              v: domain,
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #ed39a8;"
-              }
-            },
-            {
-              v: numSeconds,
-              f: timeString(numSeconds),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #ed39a8;"
-              }
-            }
-          ]);
-          break;
-        case 4:
-          table_data.push([
-            {
-              v: domain,
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #e66ec8;"
-              }
-            },
-            {
-              v: numSeconds,
-              f: timeString(numSeconds),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #e66ec8;"
-              }
-            }
-          ]);
-          break;
-        case 5:
-          table_data.push([
-            {
-              v: domain,
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #eb3147;"
-              }
-            },
-            {
-              v: numSeconds,
-              f: timeString(numSeconds),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #eb3147;"
-              }
-            }
-          ]);
-          break;
-        case 6:
-          table_data.push([
-            {
-              v: domain,
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #ffae00;"
-              }
-            },
-            {
-              v: numSeconds,
-              f: timeString(numSeconds),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #ffae00;"
-              }
-            }
-          ]);
-          break;
-        case 7:
-          table_data.push([
-            {
-              v: domain,
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #0db81e;"
-              }
-            },
-            {
-              v: numSeconds,
-              f: timeString(numSeconds),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #0db81e;"
-              }
-            }
-          ]);
-          break;
-        default:
-          table_data.push([
-            {
-              v: domain,
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #5c91e6;"
-              }
-            },
-            {
-              v: numSeconds,
-              f: timeString(numSeconds),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #5c91e6;"
-              }
-            }
-          ]);
-      }
-      // table_data.push([
-      //   {
-      //     v: domain,
-      //     p:{
-      //       style: "text-align: left; white-space: normal; background-color: cyan;"
-      //     }
-      //   },
-      //   {
-      //     v: numSeconds,
-      //     f: timeString(numSeconds),
-      //     p: {
-      //       style: "text-align: left; white-space: normal; background-color: cyan;"
-      //     }
-      //   }
-      // ]);
+      addDomainData(domain, numSeconds, chartData, tableData);
     }
   }
 
-  // Display help message if no data
-  if (chart_data.length === 0) {
-    document.getElementById("nodata").style.display = "inline";
-  } else {
-    document.getElementById("nodata").style.display = "none";
-  }
+  handleNoData(chartData);
+  sortData(chartData, tableData);
 
-  // Sort data by descending duration
-  chart_data.sort(function (a, b) {
-    return b[1].v - a[1].v;
-  });
-  table_data.sort(function (a, b) {
-    return b[1].v - a[1].v;
-  });
+  const limitedDataChart = limitData(chartData);
+  const limitedDataTable = limitData(tableData);
 
-  // Limit chart data
-  var limited_data_chart = [];
-  var limited_data_table = [];
-  var chart_limit;
-  // For screenshot: if in iframe, image should always have 9 items
-  if (top == self) {
-    chart_limit = parseInt(localStorage["chart_limit"], 10);
-  } else {
-    chart_limit = 9;
-  }
-  for (var i = 0; i < chart_limit && i < chart_data.length; i++) {
-    limited_data_chart.push(chart_data[i]);
-    limited_data_table.push(table_data[i]);
-  }
-  var sum = 0;
-  for (var i = chart_limit; i < chart_data.length; i++) {
-    sum += chart_data[i][1].v;
-  }
+  addOthers(limitedDataChart, limitedDataTable, chartData);
 
-  if (sum > 0) {
-    limited_data_chart.push([
-      "Others",
-      {
-        v: sum,
-        f: timeString(sum),
-        p: {
-          style: "text-align: left; white-space: normal;",
-        },
-      },
-    ]);
-    var rnd = Math.floor(Math.random() * 8);
-      switch(rnd) {
-        case 0:
-          limited_data_table.push([
-            {
-              v: "Others",
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #5c91e6;"
-              }
-            },
-            {
-              v: sum,
-              f: timeString(sum),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #5c91e6;"
-              }
-            }
-          ]);
-          break;
-        case 1:
-          limited_data_table.push([
-            {
-              v: "Others",
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #a711f2;"
-              }
-            },
-            {
-              v: sum,
-              f: timeString(sum),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #a711f2;"
-              }
-            }
-          ]);
-          break;
-        case 2:
-          limited_data_table.push([
-            {
-              v: "Others",
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #c353e6;"
-              }
-            },
-            {
-              v: sum,
-              f: timeString(sum),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #c353e6;"
-              }
-            }
-          ]);
-          break;
-        case 3:
-          limited_data_table.push([
-            {
-              v: "Others",
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #ed39a8;"
-              }
-            },
-            {
-              v: sum,
-              f: timeString(sum),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #ed39a8;"
-              }
-            }
-          ]);
-          break;
-        case 4:
-          limited_data_table.push([
-            {
-              v: "Others",
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #e66ec8;"
-              }
-            },
-            {
-              v: sum,
-              f: timeString(sum),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #e66ec8;"
-              }
-            }
-          ]);
-          break;
-        case 5:
-          limited_data_table.push([
-            {
-              v: "Others",
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #eb3147;"
-              }
-            },
-            {
-              v: sum,
-              f: timeString(sum),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #eb3147;"
-              }
-            }
-          ]);
-          break;
-        case 6:
-          limited_data_table.push([
-            {
-              v: "Others",
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #ffae00;"
-              }
-            },
-            {
-              v: sum,
-              f: timeString(sum),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #ffae00;"
-              }
-            }
-          ]);
-          break;
-        case 7:
-          limited_data_table.push([
-            {
-              v: "Others",
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #0db81e;"
-              }
-            },
-            {
-              v: sum,
-              f: timeString(sum),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #0db81e;"
-              }
-            }
-          ]);
-          break;
-        default:
-          limited_data_table.push([
-            {
-              v: "Others",
-              p:{
-                style: "text-align: left; white-space: normal; background-color: #5c91e6;"
-              }
-            },
-            {
-              v: sum,
-              f: timeString(sum),
-              p: {
-                style: "text-align: left; white-space: normal; background-color: #5c91e6;"
-              }
-            }
-          ]);
-      }
-    // limited_data_table.push([
-    //   "Other",
-    //   {
-    //     v: sum,
-    //     f: timeString(sum),
-    //     p: {
-    //       style: "text-align: left; white-space: normal; background-color: cyan;",
-    //     },
-    //   },
-    // ]);
-  }
+  drawChart(limitedDataChart);
+  addTotal(limitedDataTable);
+  drawTable(limitedDataTable);
+}
 
-  drawChart(limited_data_chart);
+// Add domain data to chart and table arrays
+function addDomainData(domain, numSeconds, chartData, tableData) {
+  const colorClasses = [
+    "#5c91e6", "#a711f2", "#c353e6", "#ed39a8", 
+    "#e66ec8", "#eb3147", "#ffae00", "#0db81e"
+  ];
+  const randomColor = colorClasses[Math.floor(Math.random() * colorClasses.length)];
 
-  // Add total time
-  var total = JSON.parse(localStorage["total"]);
-  var numSeconds = 0;
-  numSeconds = total.today;
-  limited_data_table.push([
-    {
-      v: "Total",
-      p: {
-        style: "text-align: left; font-weight: bold; background-color: cyan;",
-      },
-    },
-    {
-      v: numSeconds,
-      f: timeString(numSeconds),
-      p: {
-        style: "text-align: left; white-space: normal; font-weight: bold; background-color: cyan;",
-      },
-    },
+  chartData.push([
+    domain,
+    { v: numSeconds, f: timeString(numSeconds), p: { style: "text-align: left; white-space: normal;" } }
   ]);
 
-  drawTable(limited_data_table);
+  tableData.push([
+    { v: domain, p: { style: `text-align: left; white-space: normal; background-color: ${randomColor};` } },
+    { v: numSeconds, f: timeString(numSeconds), p: { style: `text-align: left; white-space: normal; background-color: ${randomColor};` } }
+  ]);
 }
-function drawChart(chart_data) {
-  // Create the data table.
-  var data = new google.visualization.DataTable();
-  data.addColumn("string", "Domain");
-  data.addColumn("number", "Time");
-  data.addRows(chart_data);
 
-  // Set chart options
-  var options = {
-    tooltip: {
-      text: "percentage",
-    },
-    chartArea: {
-      width: 400,
-      height: 180,
-    },
+// Handle the case when no data is available
+function handleNoData(chartData) {
+  document.getElementById("nodata").style.display = chartData.length === 0 ? "inline" : "none";
+}
+
+// Sort chart and table data in descending order
+function sortData(chartData, tableData) {
+  chartData.sort((a, b) => b[1].v - a[1].v);
+  tableData.sort((a, b) => b[1].v - a[1].v);
+}
+
+// Limit the chart and table data to a specific number of items
+function limitData(data) {
+  const chartLimit = top === self ? parseInt(localStorage.getItem("chart_limit"), 10) : 9;
+  return data.slice(0, chartLimit);
+}
+
+// Add "Others" category if needed
+function addOthers(limitedDataChart, limitedDataTable, chartData) {
+  const sum = chartData.slice(limitedDataChart.length).reduce((acc, item) => acc + item[1].v, 0);
+
+  if (sum > 0) {
+    const randomColor = getRandomColor();
+    limitedDataChart.push([
+      "Others",
+      { v: sum, f: timeString(sum), p: { style: "text-align: left; white-space: normal;" } }
+    ]);
+    limitedDataTable.push([
+      { v: "Others", p: { style: `text-align: left; white-space: normal; background-color: ${randomColor};` } },
+      { v: sum, f: timeString(sum), p: { style: `text-align: left; white-space: normal; background-color: ${randomColor};` } }
+    ]);
+  }
+}
+
+// Draw the chart using Google Charts API
+function drawChart(data) {
+  const chartData = new google.visualization.DataTable();
+  chartData.addColumn("string", "Domain");
+  chartData.addColumn("number", "Time");
+  chartData.addRows(data);
+
+  const options = {
+    tooltip: { text: "percentage" },
+    chartArea: { width: 400, height: 180 },
     is3D: true,
-    pieHole : 0.4,
+    pieHole: 0.4,
     colors: ['#5c91e6', '#a711f2', '#c353e6', '#ed39a8', '#e66ec8', '#eb3147', '#ffae00', '#0db81e']
   };
 
-  // Instantiate and draw our chart, passing in some options.
-  var chart = new google.visualization.PieChart(
-    document.getElementById("chart_div")
-  );
-  chart.draw(data, options);
+  const chart = new google.visualization.PieChart(document.getElementById("chart_div"));
+  chart.draw(chartData, options);
 }
 
-function drawTable(table_data) {
-  var data = new google.visualization.DataTable();
-  // data.addColumn("string", "x");
-  data.addColumn("string", "Domain");
-  data.addColumn("number", "Time Spent Today");
-  data.addRows(table_data);
+// Draw the table using Google Charts API
+function drawTable(data) {
+  const tableData = new google.visualization.DataTable();
+  tableData.addColumn("string", "Domain");
+  tableData.addColumn("number", "Time Spent Today");
+  tableData.addRows(data);
 
-  var options = {
+  const options = {
     allowHtml: true,
     sort: "disable",
     width: "100%",
     height: "100%",
   };
-  var table = new google.visualization.Table(
-    document.getElementById("table_div")
-  );
-  table.draw(data, options);
+
+  const table = new google.visualization.Table(document.getElementById("table_div"));
+  table.draw(tableData, options);
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-  document.querySelector("#options").addEventListener("click", function() {
-    chrome.tabs.create({
-      url: "options.html",
-    });
+// Add total time to the table
+function addTotal(tableData) {
+  const total = JSON.parse(localStorage.getItem("total"));
+  const numSeconds = total.today;
+
+  tableData.push([
+    { v: "Total", p: { style: "text-align: left; font-weight: bold; background-color: cyan;" } },
+    { v: numSeconds, f: timeString(numSeconds), p: { style: "text-align: left; white-space: normal; font-weight: bold; background-color: cyan;" } }
+  ]);
+}
+
+// Get a random color for table rows
+function getRandomColor() {
+  const colors = ["#5c91e6", "#a711f2", "#c353e6", "#ed39a8", "#e66ec8", "#eb3147", "#ffae00", "#0db81e"];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// Add event listener for the options button
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelector("#options").addEventListener("click", () => {
+    chrome.tabs.create({ url: "options.html" });
   });
 });
