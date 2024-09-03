@@ -1,187 +1,143 @@
-// Interval (in seconds) to update timer
-var UPDATE_INTERVAL = 1;
+// Interval (in seconds) to update the timer
+const UPDATE_INTERVAL = 1;
 
-setDefaults();
-// Set default settings
-function setDefaults() {
-  // Set date
-  if (!localStorage["date"]) {
-    localStorage["date"] = new Date().toLocaleDateString();
-  }
-  // Set domains seen before
-  if (!localStorage["domains"]) {
-    localStorage["domains"] = JSON.stringify({});
-  }
-  // Set total time spent
-  if (!localStorage["total"]) {
-    localStorage["total"] = JSON.stringify({
-      today: 0
-    });
-  }
-  // The time limit user sets for a day
-  if (!localStorage["daily_limit_hr"]) {
-    localStorage["daily_limit_hr"] = 24;
-  }
-  if (!localStorage["daily_limit_min"]) {
-    localStorage["daily_limit_min"] = 00;
-  }
-  if (!localStorage["daily_limit_sec"]) {
-    localStorage["daily_limit_sec"] = 00;
-  }
-  //To keep track if a notification has been displayed today
-  if (!localStorage["flag"]) {
-    localStorage["flag"] = 0;
-  }
-  // Limit how many sites the chart shows
-  if (!localStorage["chart_limit"]) {
-    localStorage["chart_limit"] = 7;
-  }
-  // Set "other" category
-  // NOTE: other.today is not currently used
-  if (!localStorage["other"]) {
-    localStorage["other"] = JSON.stringify({
-      today: 0
-    });
+initializeDefaults();
+
+// Function to initialize default settings
+function initializeDefaults() {
+  const defaults = {
+    date: new Date().toLocaleDateString(),
+    domains: JSON.stringify({}),
+    total: JSON.stringify({ today: 0 }),
+    daily_limit_hr: 24,
+    daily_limit_min: 0,
+    daily_limit_sec: 0,
+    flag: 0,
+    chart_limit: 7,
+    other: JSON.stringify({ today: 0 }),
+  };
+
+  for (const [key, value] of Object.entries(defaults)) {
+    if (!localStorage[key]) {
+      localStorage[key] = value;
+    }
   }
 }
 
-// Add sites which are not in the top threshold sites to "other" category
+// Function to combine domains that are not in the top threshold into the "other" category
 function combineEntries(threshold) {
-  var domains = JSON.parse(localStorage["domains"]);
-  var other = JSON.parse(localStorage["other"]);
-  // Don't do anything if there are less than threshold domains
-  if (Object.keys(domains).length <= threshold) {
-    return;
-  }
-  // Sort the domains by decreasing "all" time
-  var data = [];
-  for (var domain in domains) {
-    var domain_data = JSON.parse(localStorage[domain]);
-    data.push({
-      domain: domain,
-    });
-  }
-  data.sort(function (a, b) {
-    return b.today - a.today;
-  });
-  // Delete data after top threshold and add it to other
-  for (var i = threshold; i < data.length; i++) {
-    var domain = data[i].domain;
+  const domains = JSON.parse(localStorage["domains"]);
+  const other = JSON.parse(localStorage["other"]);
+
+  if (Object.keys(domains).length <= threshold) return;
+
+  const domainEntries = Object.entries(domains).map(([domain]) => ({
+    domain,
+    today: JSON.parse(localStorage[domain]).today,
+  }));
+
+  domainEntries.sort((a, b) => b.today - a.today);
+
+  for (let i = threshold; i < domainEntries.length; i++) {
+    const domain = domainEntries[i].domain;
     delete localStorage[domain];
     delete domains[domain];
   }
+
   localStorage["other"] = JSON.stringify(other);
   localStorage["domains"] = JSON.stringify(domains);
 }
 
-// Check to make sure data is kept for the same day
+// Function to check if the data needs to be reset for a new day
 function checkDate() {
-  var todayStr = new Date().toLocaleDateString();
-  var saved_day = localStorage["date"];
-  if (saved_day !== todayStr) {
-    localStorage["flag"]=0;
-    // Reset today's data
-    var domains = JSON.parse(localStorage["domains"]);
-    for (var domain in domains) {
-      var domain_data = JSON.parse(localStorage[domain]);
-      domain_data.today = 0;
-      localStorage[domain] = JSON.stringify(domain_data);
+  const todayStr = new Date().toLocaleDateString();
+  const savedDay = localStorage["date"];
+
+  if (savedDay !== todayStr) {
+    localStorage["flag"] = 0;
+
+    const domains = JSON.parse(localStorage["domains"]);
+    for (const domain in domains) {
+      const domainData = JSON.parse(localStorage[domain]);
+      domainData.today = 0;
+      localStorage[domain] = JSON.stringify(domainData);
     }
-    // Reset total for today
-    var total = JSON.parse(localStorage["total"]);
+
+    const total = JSON.parse(localStorage["total"]);
     total.today = 0;
     localStorage["total"] = JSON.stringify(total);
-    // Combine entries that are not part of top 500 sites
+
     combineEntries(500);
     localStorage["date"] = todayStr;
   }
 }
 
-// Extract the domain from the url
-// e.g. http://google.com/ -> google.com
+// Function to extract the domain from a URL
 function extractDomain(url) {
-  var re = /:\/\/(www\.)?(.+?)\//;
-  return url.match(re)[2];
+  const domainMatch = url.match(/:\/\/(www\.)?(.+?)\//);
+  return domainMatch ? domainMatch[2] : '';
 }
 
+// Function to check if the URL should be blacklisted
 function inBlacklist(url) {
-  if (!url.match(/^http/)) {
-    return true;
-  }
-  return false;
+  return !url.match(/^http/);
 }
 
-// Update the data
+// Function to update the data for the active tab
 function updateData() {
-  // Only count time if system has not been idle for 30 seconds
-  chrome.idle.queryState(30, function (state) {
+  chrome.idle.queryState(30, (state) => {
     if (state === "active") {
-      // Select single active tab from focused window
-      chrome.tabs.query({ lastFocusedWindow: true, active: true }, function (
-        tabs
-      ) {
-        if (tabs.length === 0) {
-          return;
-        }
-        var tab = tabs[0];
-        // Make sure 'today' is up-to-date
+      chrome.tabs.query({ lastFocusedWindow: true, active: true }, (tabs) => {
+        if (tabs.length === 0) return;
+
+        const tab = tabs[0];
         checkDate();
+
         if (!inBlacklist(tab.url)) {
-          var domain = extractDomain(tab.url);
-          // Add domain to domain list if not already present
-          var domains = JSON.parse(localStorage["domains"]);
+          const domain = extractDomain(tab.url);
+          let domains = JSON.parse(localStorage["domains"]);
+
           if (!(domain in domains)) {
             domains[domain] = 1;
             localStorage["domains"] = JSON.stringify(domains);
           }
-          var domain_data;
-          if (localStorage[domain]) {
-            domain_data = JSON.parse(localStorage[domain]);
-          } else {
-            domain_data = {
-              today: 0
-            };
-          }
-          domain_data.today += UPDATE_INTERVAL;
-          localStorage[domain] = JSON.stringify(domain_data);
-          // Update total time
-          var total = JSON.parse(localStorage["total"]);
+
+          const domainData = localStorage[domain]
+            ? JSON.parse(localStorage[domain])
+            : { today: 0 };
+
+          domainData.today += UPDATE_INTERVAL;
+          localStorage[domain] = JSON.stringify(domainData);
+
+          const total = JSON.parse(localStorage["total"]);
           total.today += UPDATE_INTERVAL;
           localStorage["total"] = JSON.stringify(total);
-          // Update badge with number of minutes spent on
-          // current site
-          var num_min = Math.floor(domain_data.today / 60).toString();
-          if (num_min.length < 4) {
-            num_min += "m";
-          }
-          chrome.browserAction.setBadgeText({
-            text: num_min,
-          });
+
+          const numMin = Math.floor(domainData.today / 60).toString().padEnd(4, "m");
+          chrome.browserAction.setBadgeText({ text: numMin });
         } else {
-          // Clear badge
-          chrome.browserAction.setBadgeText({
-            text: "",
-          });
+          chrome.browserAction.setBadgeText({ text: "" });
         }
       });
     }
   });
-  var h = parseInt(localStorage["daily_limit_hr"], 10);
-  var m = parseInt(localStorage["daily_limit_min"], 10);
-  var s = parseInt(localStorage["daily_limit_sec"], 10);
-  var total = JSON.parse(localStorage["total"]);
-  var daily_limit = 3600*h + 60*m + s;
-  //display notification if the total time is exceeds the set limit
-  if(total.today >= daily_limit && localStorage["flag"]==0){
-    var notifOptions = {
-        type: 'basic',
-        iconUrl: 'icon48.png',
-        title: 'Limit Reached for Today',
-        message: "Your Web Time has finished for the Day !!!"
-    };
-    chrome.notifications.create('limitNotif', notifOptions);
-    localStorage["flag"]=1;
+
+  const h = parseInt(localStorage["daily_limit_hr"], 10);
+  const m = parseInt(localStorage["daily_limit_min"], 10);
+  const s = parseInt(localStorage["daily_limit_sec"], 10);
+  const total = JSON.parse(localStorage["total"]);
+  const dailyLimit = 3600 * h + 60 * m + s;
+
+  if (total.today >= dailyLimit && localStorage["flag"] == 0) {
+    chrome.notifications.create('limitNotif', {
+      type: 'basic',
+      iconUrl: 'icon48.png',
+      title: 'Limit Reached for Today',
+      message: 'Your Web Time has finished for the Day!!!'
+    });
+    localStorage["flag"] = 1;
   }
 }
-// Update timer data every UPDATE_INTERVAL seconds
+
+// Set the interval to update data
 setInterval(updateData, UPDATE_INTERVAL * 1000);
